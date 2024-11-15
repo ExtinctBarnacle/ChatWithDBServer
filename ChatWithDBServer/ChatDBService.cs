@@ -60,6 +60,7 @@ class ChatDBService
                         //Console.WriteLine("BUFFER: " + buffer);
                         Array.Resize(ref chat, chat.Length + 1);
                     }
+                    Array.Resize(ref chat, chat.Length - 1);
                     return chat;
                 }
             }

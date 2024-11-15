@@ -9,6 +9,7 @@ var users = new Dictionary<string, Boolean>();
 ChatMessageModel newMessage = null;
 try
 {
+    string responseString = "";
     tcpListener.Start();    // запускаем сервер
     //Console.WriteLine("Сервер запущен. Ожидание подключений...");
     //ChatDBService.CreateChatTable();
@@ -22,7 +23,7 @@ try
         // буфер для входящих данных
         var response = new List<byte>();
         int bytesRead = 10;
-        string responseString = "";
+        
         while (true)
         {
             // считываем данные до конечного символа
@@ -33,8 +34,7 @@ try
             }
             var msg = Encoding.UTF8.GetString(response.ToArray());
 
-            // маркер окончания
-            // выходим из цикла
+            // маркер окончания - выходим из цикла
             if (msg == "STOP") break;
 
             //Console.WriteLine($"Server has got a message: {msg}");
@@ -42,13 +42,13 @@ try
             if (msg.Substring(0, 2) == "ON")
             {
                 User user = JsonSerializer.Deserialize<User>(msg.Substring(2));
-                if (user != null)
+                if (user != null && newMessage != null)
                 {
-                    if (users.ContainsKey(user.Name))
+                    if (!users.ContainsKey(user.Name))
                         {
                         users.Add(user.Name, true);
-
                     }
+                    responseString = "NM" + JsonSerializer.Serialize(newMessage);
                 }
             }
             if (msg.Substring(0, 2) == "OF")
@@ -58,7 +58,7 @@ try
                 {
                     if (users.ContainsKey(user.Name))
                     {
-                        users.Add(user.Name, false);
+                        users[user.Name] = false;
                     }
                 }
             }
@@ -73,7 +73,10 @@ try
                 ChatDBService.StoreDataToDB(message);
                 newMessage = message;
                 responseString = msg;
-                users.Add(message.user.Name, true);
+                if (!users.ContainsKey(message.user.Name))
+                {
+                    users.Add(message.user.Name, true);
+                }
             }
             // отправляем ответ сервера
             await stream.WriteAsync(Encoding.UTF8.GetBytes(responseString + "\n")).ConfigureAwait(false);
