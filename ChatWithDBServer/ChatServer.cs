@@ -1,26 +1,28 @@
-﻿using System.Net;
+﻿using ChatWithDBServer;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Transactions;
+using System.Text.Json;
 
 var tcpListener = new TcpListener(IPAddress.Any, 8080);
-//var words = new Dictionary<string, string>();
+var users = new Dictionary<string, Boolean>();
+ChatMessageModel newMessage = null;
 try
 {
     tcpListener.Start();    // запускаем сервер
-    Console.WriteLine("Сервер запущен. Ожидание подключений... ");
-    ChatDBService.CreateChatTable();
+    //Console.WriteLine("Сервер запущен. Ожидание подключений...");
+    //ChatDBService.CreateChatTable();
 
     while (true)
     {
         // получаем подключение в виде TcpClient
-        using var tcpClient = await tcpListener.AcceptTcpClientAsync();
+        using var tcpClient = await tcpListener.AcceptTcpClientAsync().ConfigureAwait(false);
         // получаем объект NetworkStream для взаимодействия с клиентом
         var stream = tcpClient.GetStream();
         // буфер для входящих данных
         var response = new List<byte>();
         int bytesRead = 10;
-        int msgCount = 0;
+        string responseString = "";
         while (true)
         {
             // считываем данные до конечного символа
@@ -29,23 +31,52 @@ try
                 // добавляем в буфер
                 response.Add((byte)bytesRead);
             }
-            var word = Encoding.UTF8.GetString(response.ToArray());
+            var msg = Encoding.UTF8.GetString(response.ToArray());
 
-            // если прислан маркер окончания взаимодействия,
-            // выходим из цикла и завершаем взаимодействие с клиентом
-            if (word == "END") break;
+            // маркер окончания
+            // выходим из цикла
+            if (msg == "STOP") break;
 
-            Console.WriteLine($"Запрошен перевод слова {word}");
-            // находим слово в словаре и отправляем обратно клиенту
-            //if (!words.TryGetValue(word, out var translation)) translation = "не найдено в словаре";
-            msgCount++;
-            //words.Add(DateTime.Now.ToString() + " " + msgCount.ToString(), word);
-            Console.WriteLine(DateTime.Now.ToString() + word);
-            var translation = word + " message added to chat";
-            // добавляем символ окончания сообщения 
-            translation += '\n';
-            // отправляем перевод слова из словаря
-            await stream.WriteAsync(Encoding.UTF8.GetBytes(translation));
+            //Console.WriteLine($"Server has got a message: {msg}");
+            if (msg == null) continue;
+            if (msg.Substring(0, 2) == "ON")
+            {
+                User user = JsonSerializer.Deserialize<User>(msg.Substring(2));
+                if (user != null)
+                {
+                    if (users.ContainsKey(user.Name))
+                        {
+                        users.Add(user.Name, true);
+
+                    }
+                }
+            }
+            if (msg.Substring(0, 2) == "OF")
+            {
+                User user = JsonSerializer.Deserialize<User>(msg.Substring(2));
+                if (user != null)
+                {
+                    if (users.ContainsKey(user.Name))
+                    {
+                        users.Add(user.Name, false);
+                    }
+                }
+            }
+            if (msg.Substring(0,2) == "CH")
+            {
+                string[] history = ChatDBService.LoadChatTable();
+                responseString = JsonSerializer.Serialize(history);
+            }
+            if (msg.Substring(0, 2) == "UM")
+            {
+                ChatMessageModel message = JsonSerializer.Deserialize<ChatMessageModel>(msg.Substring(2));
+                ChatDBService.StoreDataToDB(message);
+                newMessage = message;
+                responseString = msg;
+                users.Add(message.user.Name, true);
+            }
+            // отправляем ответ сервера
+            await stream.WriteAsync(Encoding.UTF8.GetBytes(responseString + "\n")).ConfigureAwait(false);
             response.Clear();
         }
     }
