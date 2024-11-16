@@ -1,5 +1,5 @@
 ﻿namespace ChatWithDBServer {
-
+// компаратор для класса User - чтобы корректно сравнивать объекты пользователей по имени и IP
 public sealed class UserEqualityComparer : IEqualityComparer<User>
 {
     public bool Equals (User x, User y)

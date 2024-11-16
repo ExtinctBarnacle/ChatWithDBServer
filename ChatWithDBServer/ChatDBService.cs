@@ -6,27 +6,22 @@ class ChatDBService
     // файл базы данных
     static string connectionString = "Data Source=mydatabase.db; Version=3;";
 
+    // метод создаёт таблицу ChatHistory (история переписки в чате), если в БД mydatabase.db такой таблицы нет
     public static void CreateChatTable()
     {
-        // Создание базы данных и таблицы
         using (SQLiteConnection connection = new SQLiteConnection(connectionString))
         {
             connection.Open();
-
             string createTableQuery = "CREATE TABLE IF NOT EXISTS ChatHistory (Id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, DateTimeStamp TEXT, user INTEGER)";
             using (SQLiteCommand command = new SQLiteCommand(createTableQuery, connection))
             {
                 command.ExecuteNonQuery();
             }
-            createTableQuery = "CREATE TABLE IF NOT EXISTS Users (Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT, IP TEXT)";
-            using (SQLiteCommand command = new SQLiteCommand(createTableQuery, connection))
-            {
-                command.ExecuteNonQuery();
-            }
+            connection.Close();
         }
-        string dbFilePath = System.IO.Path.GetFullPath("mydatabase.db");
-        Console.WriteLine($"Database file is located at: {dbFilePath}");
     }
+
+    // метод сохраняет в таблицу ChatHistory очередное сообщение чата, присланное клиентом
     public static void StoreDataToDB(ChatMessageModel chatMessage) {
         using (SQLiteConnection connection = new SQLiteConnection(connectionString))
         {
@@ -39,8 +34,11 @@ class ChatDBService
                 command.Parameters.AddWithValue("@user", chatMessage.user.Name);
                 command.ExecuteNonQuery();
             }
+            connection.Close();
         }
     }
+    
+    // метод читает из БД и возвращает массив объектов сообщений - историю переписки в чате
     public static ChatMessageModel[] LoadChatTable() {
         using (SQLiteConnection connection = new SQLiteConnection(connectionString))
         {
@@ -61,11 +59,11 @@ class ChatDBService
                         Array.Resize(ref chat, chat.Length + 1);
                     }
                     Array.Resize(ref chat, chat.Length - 1);
+                    connection.Close();
                     return chat;
                 }
             }
+            
         }
     }
-        
-    
 }
