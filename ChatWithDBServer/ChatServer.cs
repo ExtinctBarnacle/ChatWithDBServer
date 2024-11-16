@@ -13,7 +13,7 @@ namespace ChatWithDBServer
         static int NewMessagesIndex = -1;
 
         // массив подключённых пользователей, булево значение - онлайн или нет
-        static Dictionary<User, Boolean> users = new Dictionary<User, Boolean>();
+        static Dictionary<User, Boolean> users = new Dictionary<User, Boolean>(new UserEqualityComparer());
 
         public async void MainServerLoop()
         {
@@ -42,6 +42,7 @@ namespace ChatWithDBServer
                         {
                             // добавляем в буфер
                             response.Add((byte)bytesRead);
+                            if (response.Count> 1000000) response.Clear();
                         }
                         var msg = Encoding.UTF8.GetString(response.ToArray());
 
@@ -56,7 +57,7 @@ namespace ChatWithDBServer
                             User? user = JsonSerializer.Deserialize<User>(msg.Substring(2));
                             if (user != null)
                             {
-                                if (!users.ContainsKey(user))
+                                if (users.ContainsKey(user) == false)
                                 {
                                     users.Add(user, true);
                                 }

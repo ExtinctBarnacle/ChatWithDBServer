@@ -53,13 +53,12 @@ class ChatDBService
                     ChatMessageModel[] chat = new ChatMessageModel[1];
                     while (reader.Read())
                     {
-                        chat[chat.Length - 1] = new ChatMessageModel();
-                        chat[chat.Length - 1].Text = (string) reader[1];
-                        chat[chat.Length - 1].DateTimeStamp = (string) reader[2];
-                        chat[chat.Length - 1].user = new User();
-                        chat[chat.Length - 1].user.Name = (string) reader[3];
+                        chat[^1] = new ChatMessageModel();
+                        chat[^1].Text = (string) reader[1];
+                        chat[^1].DateTimeStamp = (string) reader[2];
+                        chat[^1].user = new User();
+                        chat[^1].user.Name = (string) reader[3];
                         Array.Resize(ref chat, chat.Length + 1);
-                        //chat[chat.Length - 1] = new ChatMessageModel();
                     }
                     Array.Resize(ref chat, chat.Length - 1);
                     return chat;
