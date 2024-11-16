@@ -41,7 +41,7 @@ class ChatDBService
             }
         }
     }
-    public static string[] LoadChatTable() {
+    public static ChatMessageModel[] LoadChatTable() {
         using (SQLiteConnection connection = new SQLiteConnection(connectionString))
         {
             connection.Open();
@@ -50,15 +50,16 @@ class ChatDBService
             {
                 using (SQLiteDataReader reader = command.ExecuteReader())
                 {
-                    string[] chat = new string[1];
+                    ChatMessageModel[] chat = new ChatMessageModel[1];
                     while (reader.Read())
                     {
-                        string buffer = (string) reader[1];
-                        buffer = (string) reader[3] + " " + (string) reader[2] + " " + buffer;
-                        //if (buffer == null) buffer = " ";
-                        chat[chat.Length - 1] = buffer;
-                        //Console.WriteLine("BUFFER: " + buffer);
+                        chat[chat.Length - 1] = new ChatMessageModel();
+                        chat[chat.Length - 1].Text = (string) reader[1];
+                        chat[chat.Length - 1].DateTimeStamp = (string) reader[2];
+                        chat[chat.Length - 1].user = new User();
+                        chat[chat.Length - 1].user.Name = (string) reader[3];
                         Array.Resize(ref chat, chat.Length + 1);
+                        //chat[chat.Length - 1] = new ChatMessageModel();
                     }
                     Array.Resize(ref chat, chat.Length - 1);
                     return chat;
