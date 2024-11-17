@@ -4,12 +4,12 @@ using System.Data.SQLite;
 class ChatDBService
 {
     // файл базы данных
-    static string connectionString = "Data Source=mydatabase.db; Version=3;";
+    static string СonnectionString = "Data Source=mydatabase.db; Version=3;";
 
     // метод создаёт таблицу ChatHistory (история переписки в чате), если в БД mydatabase.db такой таблицы нет
     public static void CreateChatTable()
     {
-        using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+        using (SQLiteConnection connection = new SQLiteConnection(СonnectionString))
         {
             connection.Open();
             string createTableQuery = "CREATE TABLE IF NOT EXISTS ChatHistory (Id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, DateTimeStamp TEXT, user INTEGER)";
@@ -23,7 +23,7 @@ class ChatDBService
 
     // метод сохраняет в таблицу ChatHistory очередное сообщение чата, присланное клиентом
     public static void StoreDataToDB(ChatMessageModel chatMessage) {
-        using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+        using (SQLiteConnection connection = new SQLiteConnection(СonnectionString))
         {
             connection.Open();
             string insertQuery = "INSERT INTO ChatHistory (text, DateTimeStamp, user) VALUES (@text, @DateTimeStamp, @user)";
@@ -31,7 +31,7 @@ class ChatDBService
             {
                 command.Parameters.AddWithValue("@text", chatMessage.Text);
                 command.Parameters.AddWithValue("@DateTimeStamp", chatMessage.DateTimeStamp);
-                command.Parameters.AddWithValue("@user", chatMessage.user.Name);
+                command.Parameters.AddWithValue("@user", chatMessage.User.Name);
                 command.ExecuteNonQuery();
             }
             connection.Close();
@@ -40,7 +40,7 @@ class ChatDBService
     
     // метод читает из БД и возвращает массив объектов сообщений - историю переписки в чате
     public static ChatMessageModel[] LoadChatTable() {
-        using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+        using (SQLiteConnection connection = new SQLiteConnection(СonnectionString))
         {
             connection.Open();
             string selectQuery = "SELECT * FROM ChatHistory";
@@ -54,8 +54,8 @@ class ChatDBService
                         chat[^1] = new ChatMessageModel();
                         chat[^1].Text = (string) reader[1];
                         chat[^1].DateTimeStamp = (string) reader[2];
-                        chat[^1].user = new User();
-                        chat[^1].user.Name = (string) reader[3];
+                        chat[^1].User = new User();
+                        chat[^1].User.Name = (string) reader[3];
                         Array.Resize(ref chat, chat.Length + 1);
                     }
                     Array.Resize(ref chat, chat.Length - 1);

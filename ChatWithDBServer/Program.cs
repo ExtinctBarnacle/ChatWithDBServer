@@ -7,6 +7,7 @@ namespace ChatWithDBServer
         {
             ChatServer chatServer = new ChatServer ();
             chatServer.MainServerLoop();
+            // не даёт программе завершиться раньше, чем закончит работу второй поток в классе ChatServer
             while (true) { }
 
         }

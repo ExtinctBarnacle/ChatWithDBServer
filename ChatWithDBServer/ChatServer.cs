@@ -14,7 +14,7 @@ namespace ChatWithDBServer
         static int NewMessagesIndex = -1;
 
         // массив подключённых пользователей, булево значение - онлайн или нет
-        static Dictionary<User, Boolean> users = new Dictionary<User, Boolean>(new UserEqualityComparer());
+        static Dictionary<User, Boolean> Users = new Dictionary<User, Boolean>(new UserEqualityComparer());
 
         public async void MainServerLoop()
         {
@@ -44,17 +44,21 @@ namespace ChatWithDBServer
                             response.Add((byte)bytesRead);
                             if (response.Count > 1000000) response.Clear();
                         }
-                        var msg = Encoding.UTF8.GetString(response.ToArray());
-
+                        var message = Encoding.UTF8.GetString(response.ToArray());
                         // маркер окончания - выходим из цикла
-                        if (msg == "STOP") break;
-
-                        if (msg == null) continue;
-
-                        responseString = CheckMessageFromClient(msg);
+                        if (message == "STOP") break;
+                        if (message == null) continue;
+                        try
+                        {
+                            responseString = CheckMessageFromClient(message);
+                            await stream.WriteAsync(Encoding.UTF8.GetBytes(responseString + "\n")).ConfigureAwait(false);
+                            response.Clear();
+                        }
+                        catch (ArgumentException e) { 
+                            Console.WriteLine(e.ToString());
+                        }
                         // отправляем ответ сервера
-                        await stream.WriteAsync(Encoding.UTF8.GetBytes(responseString + "\n")).ConfigureAwait(false);
-                        response.Clear();
+                        
                     }
                 }
             }
@@ -63,80 +67,79 @@ namespace ChatWithDBServer
                 tcpListener.Stop();
             }
         }
-        static string CheckMessageFromClient(string msg)
+        static string CheckMessageFromClient(string message)
         {
+            if (message.Length < 2) throw new ArgumentException("Клиент прислал некорректный запрос - невозможно прочитать.");
             // если пользователь онлайн
-            if (msg.Substring(0, 2) == "ON") return SendNewMessageToUser(msg);
+            if (message.Substring(0, 2) == "ON") return SendNewMessageToUser(message);
             // если пользователь офлайн
-            if (msg.Substring(0, 2) == "OF")
+            if (message.Substring(0, 2) == "OF")
             {
-                User? user = JsonSerializer.Deserialize<User>(msg.Substring(2));
-                if (user != null && users.ContainsKey(user))
+                User? user = JsonSerializer.Deserialize<User>(message.Substring(2));
+                if (user != null && Users.ContainsKey(user))
                 {
-                    users[user] = false;
+                    Users[user] = false;
                     return "";
                 }
             }
             // если пользователь подключился и запросил историю чата
-            if (msg.Substring(0, 2) == "CH")
+            if (message.Substring(0, 2) == "CH")
             {
                 return JsonSerializer.Serialize(ChatHistory);
             }
             // если пользователь прислал сообщение в чат
-            if (msg.Substring(0, 2) == "UM")
+            if (message.Substring(0, 2) == "UM")
             {
-                return AddNewMessageToHistory(msg);
+                return AddNewMessageToHistory(message);
             }
             return "";
         }
         
-        static string SendNewMessageToUser(string msg) 
+        static string SendNewMessageToUser(string message) 
         {
             User? user = new User();
-            user = JsonSerializer.Deserialize<User>(msg.Substring(2));
+            user = JsonSerializer.Deserialize<User>(message.Substring(2));
             string response = "";
             if (user != null)
                 {
-                    if (users.ContainsKey(user) == false)
+                    if (Users.ContainsKey(user) == false)
                         {
-                             users.Add(user, true);
+                             Users.Add(user, true);
                         }
                     // пересылаем этому пользователю новое сообщение в чате
-                    if (NewMessagesIndex > -1 && ChatHistory[NewMessagesIndex].usersToReceive[user.Name] == false)
+                    if (NewMessagesIndex > -1 && ChatHistory[NewMessagesIndex].UsersToReceive[user.Name] == false)
                         {
                             response = "NM" + JsonSerializer.Serialize(ChatHistory[NewMessagesIndex]); // prefix NM - New Message for client
-                            ChatHistory[NewMessagesIndex].usersToReceive[user.Name] = true;
-                            if (ChatHistory[NewMessagesIndex].isReceivedByAllUsers())
+                            ChatHistory[NewMessagesIndex].UsersToReceive[user.Name] = true;
+                            if (ChatHistory[NewMessagesIndex].IsReceivedByAllUsers())
                                 {
                                     if (NewMessagesIndex != ChatHistory.Length - 1) NewMessagesIndex++;
                                     else NewMessagesIndex = -1;
                                 }
-                                
-                         }
-                    
+                        }
                 }
             return response;
         }
-        static string AddNewMessageToHistory(string msg)
+        static string AddNewMessageToHistory(string message)
         {
-            ChatMessageModel? message = JsonSerializer.Deserialize<ChatMessageModel>(msg.Substring(2));
-            ChatDBService.StoreDataToDB(message);
-            message.usersToReceive = new Dictionary<string, Boolean>();
-            foreach (User user in users.Keys)
+            ChatMessageModel? messageObj = JsonSerializer.Deserialize<ChatMessageModel>(message.Substring(2));
+            ChatDBService.StoreDataToDB(messageObj);
+            messageObj.UsersToReceive = new Dictionary<string, Boolean>();
+            foreach (User user in Users.Keys)
             {
-                if (!message.usersToReceive.ContainsKey(user.Name))
+                if (!messageObj.UsersToReceive.ContainsKey(user.Name))
                 {
-                    message.usersToReceive.Add(user.Name, false);
+                    messageObj.UsersToReceive.Add(user.Name, false);
                 }
             }
             Array.Resize(ref ChatHistory, ChatHistory.Length + 1);
-            ChatHistory[ChatHistory.Length - 1] = message;
+            ChatHistory[ChatHistory.Length - 1] = messageObj;
             NewMessagesIndex = ChatHistory.Length - 1;
-            if (!users.ContainsKey(message.user))
+            if (!Users.ContainsKey(messageObj.User))
             {
-                users.Add(message.user, true);
+                Users.Add(messageObj.User, true);
             }
-            return msg;
+            return message;
         }            
     }
 }
