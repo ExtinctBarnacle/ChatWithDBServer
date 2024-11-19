@@ -16,7 +16,8 @@ namespace ChatWithDBServer
         // массив подключённых пользователей, булево значение - онлайн или нет
         static Dictionary<User, Boolean> Users = new Dictionary<User, Boolean>(new UserEqualityComparer());
 
-        public async void MainServerLoop()
+        // главный цикл сервера: получает запросы клиентов, отвечает на них, пересылает запросы к БД
+        public static async void MainServerLoop()
         {
             ChatHistory = ChatDBService.LoadChatTable();
             var tcpListener = new TcpListener(IPAddress.Any, 8080);
@@ -67,6 +68,7 @@ namespace ChatWithDBServer
                 tcpListener.Stop();
             }
         }
+        // обработка запросов клиента: по 2 первым символам определяет тип запроса, далее тело запроса в JSON
         static string CheckMessageFromClient(string message)
         {
             if (message.Length < 2) throw new ArgumentException("Клиент прислал некорректный запрос - невозможно прочитать.");
@@ -120,11 +122,13 @@ namespace ChatWithDBServer
                 }
             return response;
         }
+        // добавление очередного сообщения в историю чата и создание массива клиентов, которым нужно переслать сообщение
         static string AddNewMessageToHistory(string message)
         {
             ChatMessageModel? messageObj = JsonSerializer.Deserialize<ChatMessageModel>(message.Substring(2));
             ChatDBService.StoreDataToDB(messageObj);
             messageObj.UsersToReceive = new Dictionary<string, Boolean>();
+
             foreach (User user in Users.Keys)
             {
                 if (!messageObj.UsersToReceive.ContainsKey(user.Name))
