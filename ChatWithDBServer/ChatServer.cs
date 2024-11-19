@@ -39,11 +39,18 @@ namespace ChatWithDBServer
                     while (true)
                     {
                         // считываем данные до конечного символа
-                        while ((bytesRead = stream.ReadByte()) != '\n')
+                        try
                         {
-                            // добавляем в буфер
-                            response.Add((byte)bytesRead);
-                            if (response.Count > 1000000) response.Clear();
+                            while ((bytesRead = stream.ReadByte()) != '\n')
+                            {
+                                // добавляем в буфер
+                                response.Add((byte)bytesRead);
+                                if (response.Count > 1000000) response.Clear();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.ToString());
                         }
                         var message = Encoding.UTF8.GetString(response.ToArray());
                         // маркер окончания - выходим из цикла
