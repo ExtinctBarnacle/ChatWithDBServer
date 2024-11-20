@@ -45,7 +45,7 @@ namespace ChatWithDBServer
                             {
                                 // добавляем в буфер
                                 response.Add((byte)bytesRead);
-                                if (response.Count > 1000000) response.Clear();
+                                if (response.Count > 10000000) response.Clear();
                             }
                         }
                         catch (Exception ex)
