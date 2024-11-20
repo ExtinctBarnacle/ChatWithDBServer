@@ -115,17 +115,18 @@ namespace ChatWithDBServer
                         {
                              Users.Add(user, true);
                         }
-                    // пересылаем этому пользователю новое сообщение в чате
-                    if (NewMessagesIndex > -1 && ChatHistory[NewMessagesIndex].UsersToReceive[user.Name] == false)
-                        {
-                            response = "NM" + JsonSerializer.Serialize(ChatHistory[NewMessagesIndex]); // prefix NM - New Message for client
-                            ChatHistory[NewMessagesIndex].UsersToReceive[user.Name] = true;
-                            if (ChatHistory[NewMessagesIndex].IsReceivedByAllUsers())
-                                {
-                                    if (NewMessagesIndex != ChatHistory.Length - 1) NewMessagesIndex++;
-                                    else NewMessagesIndex = -1;
-                                }
-                        }
+                // пересылаем этому пользователю новое сообщение в чате
+                if (NewMessagesIndex > -1 && ChatHistory[NewMessagesIndex].UsersToReceive[user.Name] == false)
+                {
+                    response = "NM" + JsonSerializer.Serialize(ChatHistory[NewMessagesIndex]); // prefix NM - New Message for client
+                    ChatHistory[NewMessagesIndex].UsersToReceive[user.Name] = true;
+                    if (ChatHistory[NewMessagesIndex].IsReceivedByAllUsers())
+                    {
+                        if (NewMessagesIndex != ChatHistory.Length - 1) NewMessagesIndex++;
+                        else NewMessagesIndex = -1;
+                    }
+                }
+                else response = "ON";
                 }
             return response;
         }

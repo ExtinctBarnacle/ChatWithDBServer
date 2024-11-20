@@ -1,5 +1,6 @@
 ﻿using ChatWithDBServer;
 using System.Data.SQLite;
+using System.Net.Security;
 
 class ChatDBService
 {
@@ -12,7 +13,7 @@ class ChatDBService
         using (SQLiteConnection connection = new SQLiteConnection(СonnectionString))
         {
             connection.Open();
-            string createTableQuery = "CREATE TABLE IF NOT EXISTS ChatHistory (Id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, DateTimeStamp TEXT, user INTEGER)";
+            string createTableQuery = "CREATE TABLE IF NOT EXISTS ChatHistory (Id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, DateTimeStamp TEXT, user TEXT)";
             using (SQLiteCommand command = new SQLiteCommand(createTableQuery, connection))
             {
                 command.ExecuteNonQuery();
@@ -25,6 +26,7 @@ class ChatDBService
     public static void StoreDataToDB(ChatMessageModel chatMessage) {
         using (SQLiteConnection connection = new SQLiteConnection(СonnectionString))
         {
+            if (chatMessage.User.Name == null) chatMessage.User.Name = string.Empty;
             connection.Open();
             string insertQuery = "INSERT INTO ChatHistory (text, DateTimeStamp, user) VALUES (@text, @DateTimeStamp, @user)";
             using (SQLiteCommand command = new SQLiteCommand(insertQuery, connection))
