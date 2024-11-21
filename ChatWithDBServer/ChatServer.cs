@@ -25,7 +25,6 @@ namespace ChatWithDBServer
             {
                 string responseString = "";
                 tcpListener.Start();    // запуск сервера
-                Console.WriteLine("Server is running. Wait for connections...");
                 while (true)
                 {
                     // получаем подключение в виде TcpClient
@@ -62,11 +61,9 @@ namespace ChatWithDBServer
                             await stream.WriteAsync(Encoding.UTF8.GetBytes(responseString + "\n")).ConfigureAwait(false);
                             response.Clear();
                         }
-                        catch (ArgumentException e) { 
+                        catch (Exception e) { 
                             Console.WriteLine(e.ToString());
                         }
-                        // отправляем ответ сервера
-                        
                     }
                 }
             }
